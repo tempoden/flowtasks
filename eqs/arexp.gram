@@ -1,0 +1,11 @@
+S = sum|mult|sub|div|minus|int|var;
+sum = ws "(" ws S:l ws "+" ws S:r ws ")" ws { SumExp(:l, :r) };
+mult = ws "(" ws S:l ws "*" ws S:r ws ")" ws { MultExp(:l,:r)};
+sub = ws "(" ws S:l ws "-" ws S:r ws ")" ws { SubExp(:l, :r) };
+div = ws "(" ws S:l ws "/" ws S:r ws ")" ws { DivExp(:l, :r) };
+minus = ws "(" ws "-" ws S:epxr ws ")" ws {MinusExp(:epxr)};
+int = digit+ $S {IntExp(s2i($S))};
+digit = '0'-'9';
+var = letter $S {VarExp($S)};
+letter = 'a'-'z';
+ws = (" " | "\t")*;

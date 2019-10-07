@@ -1,0 +1,127 @@
+import runtime;
+import ds/tree;
+import ds/array;
+import string;
+import lingo/pegcode/driver;
+import ds/list;
+
+ArExp::=SumExp,MultExp,IntExp;
+SumExp(lhs:ArExp,rhs:ArExp);
+MultExp(lhs:ArExp,rhs:ArExp);
+IntExp(val:int);
+
+ArRPN ::= OpRPN, ArgRPN;
+ArgRPN(val:int);
+OpRPN ::= SumRPN, MultRPN;
+SumRPN();
+MultRPN();
+
+gram="#include arexp.gram"
+
+ar2s(e:ArExp) -> string{
+    switch (e) {
+        SumExp(l,r): concatStrings(["(",ar2s(l),"+",ar2s(r),")"]);
+        MultExp(l,r):concatStrings(["(",ar2s(l),"*",ar2s(r),")"]);
+        IntExp(v): i2s(v);
+    }
+}
+
+ar2i(e:ArExp) -> int{
+    switch (e) {
+        SumExp(l,r): ar2i(l) + ar2i(r);
+        MultExp(l,r):ar2i(l) * ar2i(r);
+        IntExp(v): v;
+    }
+}
+
+s2ar(s:string)->ArExp{
+    parser=compilePegGrammar(gram);
+    parsic(parser,s,SemanticActions(setTree(defaultPegActions.t,"makeIntExp",\str->IntExp(s2i(str[0])))));
+}
+
+ar2rpn(e:ArExp)->[ArRPN]{
+    switch(e){
+        IntExp(v): [ArgRPN(v)];
+        MultExp(l,r): concat(concat(ar2rpn(l),ar2rpn(r)), [MultRPN()]);
+        SumExp(l,r): concat(concat(ar2rpn(l),ar2rpn(r)), [SumRPN()]);
+    }    
+}
+
+/*apply_op = \op,st -> {
+    switch(st){
+        Cons(v1,t1):{
+            switch(t1){
+                Cons(v2,t2): Some(Cons(op(v1,v2),t2));
+            }
+        }
+        Empty: None();
+    }
+}*/
+
+rpn2ar(e:[ArRPN]) -> Maybe<ArExp>{
+    /*switch(e[length(e)-1]){
+        ArgRPN(v): IntExp(v);
+        SumRPN(): SumExp(rpn2ar(subrange(e,0,length(e)-3)),rpn2ar(subrange(e,0,length(e)-2)));
+        MultRPN(): MultExp(rpn2ar(subrange(e,0,length(e)-3)),rpn2ar(subrange(e,0,length(e)-2))); 
+    }*/
+    apply_op = \op, st -> {
+        switch(st){
+            Cons(v1, t1):{
+                switch(t1){
+                    Cons(v2,t2): Some(Cons(op(v1,v2),t2));
+                    EmptyList(): None();
+                }
+            };
+            EmptyList(): None();
+        }
+    };
+    stack = fold(e, Some(makeList()),\acc,r ->
+        maybeBind(acc, \ac ->
+            switch(r){
+                ArgRPN(v): Some(Cons(ArInt(v), ac));
+                OpRPN(v): apply_op(\v1,v2->switch(r){
+                    SumRPN(): SumExp(v1,v2);
+                    MultRPN(): MultExp(v1,v2);
+                }, ac);
+            }
+        )
+    )
+    maybeBind(stack,\st->switch(st){
+        Cons(e,t): if(t==EmptyList) Some(e) else None()
+    })
+}
+
+pop(a:[?])->?{
+    toret = a[length(a) - 1];
+    toret;
+}
+
+push(a:[?], e:?)->[?]{
+    concat(a,[e]);
+}
+
+rpn2s(e:[ArRPN]) -> string{
+    fold(e, "", \acc,el -> concatStrings([acc, 
+        switch(el){
+            ArgRPN(v): concatStrings([i2s(v)," "]);
+            MultRPN(): "* ";
+            SumRPN(): "+ ";
+        }
+    ]));
+}
+
+/*rpn2i(e:[ArRPN]) -> int{
+    
+}*/
+
+main(){
+    expr:ArExp = SumExp(SumExp(IntExp(2),IntExp(3)),MultExp(IntExp(1),SumExp(IntExp(3),IntExp(4))));
+    rpnexp:[ArRPN] = [ArgRPN(1),ArgRPN(4),SumRPN(),ArgRPN(2),ArgRPN(1),SumRPN(),MultRPN()];
+    println(ar2s(expr));
+    println(ar2i(expr));
+    println(ar2i(s2ar("(2+(2*3))")));
+    println(ar2i(s2ar("((1+1)*1)")));
+    println(ar2i(s2ar("   (       ( 1  +       4) *     2)")));
+    println(rpn2s(rpnexp));
+    println(rpn2s(ar2rpn(expr)));
+}

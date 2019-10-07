@@ -1,0 +1,40 @@
+import runtime;
+import string;
+import ds/array;
+import ds/tree;
+
+NwithInd(ind:int, num:int);
+
+f(h:[int], m:int) -> [Pair<int,int>] {
+    //a_ind = fold(a,Pair([],0),\acc,n -> Pair(concat(acc.first,[NwithInd(acc.second,n)]), acc.second+1))
+    a_ind = fold(h, [], \acc,n-> concat(acc,[NwithInd(length(acc),n)]));
+    fold(a_ind,[],\acc,a->
+        fold(a_ind,acc,\bcc,b->
+            if(a.num+b.num==m)
+                concat(bcc,[Pair(a.ind,b.ind)])
+            else
+                bcc
+        )
+    )
+}
+
+inds(h:[int], m:int) -> [Pair<int,int>]{
+    mt:Tree<int,[int]> = foldi(h,makeTree(),\i,tree,k->
+        switch(lookupTree(tree, k)){
+            Some(v):  setTree(tree,k,concat(v,[i]));
+            None(): setTree(tree,k,[i]); 
+        }
+    );
+    foldi(h,[],\i,acc,n ->
+        switch(lookupTree(mt, m-n)){
+            Some(v): concat(acc,map(v,\e -> Pair(e,i)));
+            None(): acc;
+        }
+    )
+}
+
+
+
+main(){
+    println(strGlue(map(inds([0,2,1,4,3,5,1,1],2),\a -> "("+map([a.first],i2s)[0]+","+map([a.second],i2s)[0]+")")," "));
+}

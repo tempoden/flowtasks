@@ -1,0 +1,6 @@
+S = sum|mult|int;
+sum = ws "(" ws S:l ws "+" ws S:r ws ")" ws { SumExp(:l,:r)};
+mult = ws "(" ws S:l ws "*" ws S:r ws ")" ws { MultExp(:l,:r)};
+int = digit+ $S {IntExp(s2i($S))};
+digit = '0'-'9';
+ws = (" " | "\t")*;

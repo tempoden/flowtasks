@@ -1,163 +1,6 @@
-import maybe;
-import ds/tree;
-import ds/array;
-import string;
-import lingo/pegcode/driver;
+import rational;
+import arexp;
 
-ArExp::=SumExp, MultExp, SubExp, DivExp, MinusExp,IntExp, VarExp;
-
-SumExp(lhs:ArExp,rhs:ArExp);
-MultExp(lhs:ArExp,rhs:ArExp);
-SubExp(lhs:ArExp,rhs:ArExp);
-DivExp(lhs:ArExp,rhs:ArExp);
-MinusExp(expr: ArExp);
-IntExp(val:int);
-VarExp(name:string);
-
-Rational(num: int, den: int);
-
-gram="#include arexp.gram"
-
-multRationals(l: Rational, r: Rational) -> Rational{
-    cdiv = gcd(l.num * r.num, l.den * r.den);
-    Rational((l.num * r.num)/cdiv, (l.den * r.den)/cdiv);
-}
-
-divRationals(l: Rational, r: Rational) -> Rational{
-    cdiv = gcd(l.num * r.den, l.den * r.num);
-    Rational((l.num * r.den)/cdiv, (l.den * r.num)/cdiv);
-}
-
-sumRationals(l: Rational, r: Rational) -> Rational{
-    if(l.den == r.den){
-        Rational(l.num + r.num, l.den);
-    } else {
-        cdiv = gcd(l.num * r.den + r.num * l.den, l.den * r.den);
-        Rational((l.num * r.den + r.num * l.den)/cdiv, (l.den * r.den)/cdiv);
-    }
-}
-
-subRationals(l: Rational, r: Rational) -> Rational{
-    if(l.den == r.den){
-        Rational(l.num - r.num, l.den);
-    } else {
-        cdiv = gcd(l.num * r.den - r.num * l.den, l.den * r.den);
-        Rational((l.num * r.den - r.num * l.den)/cdiv, (l.den * r.den)/cdiv);
-    }
-}
-
-r2s(e:Rational) -> string{
-    if (e.den == 1){
-        i2s(e.num);
-    } else {
-        concatStrings([i2s(e.num), "/", i2s(e.den)]);
-    }
-}
-
-ar2s(e:ArExp) -> string{
-    switch (e) {
-        SumExp(l,r): concatStrings(["(",ar2s(l),"+",ar2s(r),")"]);
-        MultExp(l,r):concatStrings(["(",ar2s(l),"*",ar2s(r),")"]);
-        SubExp(l,r): concatStrings(["(",ar2s(l),"-",ar2s(r),")"]);
-        DivExp(l,r): concatStrings(["(",ar2s(l),"/",ar2s(r),")"]);
-        MinusExp(expr): concatStrings(["-",ar2s(expr)]);
-        IntExp(v): i2s(v);
-        VarExp(name): name;
-    }
-}
-
-s2ar(s:string)->ArExp{
-    parser=compilePegGrammar(gram);
-    parsic(parser,s,SemanticActions(setTree(defaultPegActions.t,"makeIntExp",\str->IntExp(s2i(str[0])))));
-}
-/*
-ar2i(e:ArExp) -> int{
-    switch (e) {
-        SumExp(l,r): ar2i(l) + ar2i(r);
-        MultExp(l,r):ar2i(l) * ar2i(r);
-        IntExp(v): v;
-    }
-}*/
-
-eval(expr: ArExp, var_vals: Tree<string, int>) -> Maybe<Rational>{
-    switch(expr){
-        SumExp(l,r): 
-            switch(eval(l, var_vals)){
-                Some(lft): switch(eval(r,var_vals)){
-                    Some(rht): Some(sumRationals(lft, rht));
-                    None(): None();
-                };
-                None(): None();
-            };
-        MultExp(l,r): 
-            switch(eval(l,var_vals)){
-                Some(lft): switch(eval(r,var_vals)){
-                    Some(rht): Some(multRationals(lft, rht));
-                    None(): None();
-                };
-                None(): None();
-            };
-        SubExp(l,r): 
-            switch(eval(l,var_vals)){
-                Some(lft): switch(eval(r,var_vals)){
-                    Some(rht): Some(subRationals(lft, rht));
-                    None(): None();
-                };
-                None(): None();
-            };
-        DivExp(l,r): 
-            switch(eval(l,var_vals)){
-                Some(lft): switch(eval(r,var_vals)){
-                    Some(rht): if(rht.num == 0){ None(); } else {Some(divRationals(lft, rht))};
-                    None(): None();
-                };
-                None(): None();
-            };
-        MinusExp(expression): eval( SubExp(IntExp(0), expression) ,var_vals);
-        IntExp(v): Some(Rational(v, 1));
-        VarExp(name): 
-            switch(lookupTree(var_vals, name)){
-                Some(v): Some(Rational(v, 1));
-                None(): None();
-            };
-    }
-}
-
-diff(expr: ArExp, var: string) -> ArExp{
-    switch(expr){
-        SumExp(l,r): SumExp(diff(l, var), diff(r, var));
-        SubExp(l,r): SubExp(diff(l, var), diff(r, var));
-        MultExp(l,r): SumExp(MultExp(diff(l,var), r), MultExp(l, diff(r, var)));
-        DivExp(l,r): DivExp(SubExp(MultExp(diff(l,var), r), MultExp(l, diff(r, var))), MultExp(r,r));
-        MinusExp(expression): MinusExp(diff(expression, var));
-        IntExp(v): IntExp(0);
-        VarExp(name): if (name == var) {IntExp(1)} else {IntExp(0)}; 
-    }
-}
-
-simplify(expr){
-    switch(expr){
-        SumExp(l,r): if(l == IntExp(0) && r == IntExp(0)) {IntExp(0)} 
-                     else if(l == IntExp(0)) {r}
-                     else if (r == IntExp(0)) {l}
-                     else {SumExp(simplify(l), simplify(r))};
-        SubExp(l,r): if(l == IntExp(0) && r == IntExp(0)) {IntExp(0)} 
-                     else if( l == r ) {IntExp(0)}
-                     else if(l == IntExp(0)) {r}
-                     else if (r == IntExp(0)) {l}
-                     else {SubExp(simplify(l), simplify(r))};
-        MultExp(l,r): if( l == IntExp(0) || r == IntExp(0)) {IntExp(0)} 
-                     else if(l == IntExp(1)) {r}
-                     else if (r == IntExp(1)) {l} 
-                     else {MultExp(simplify(l), simplify(r))};
-        DivExp(l,r): if ( l == r ) {IntExp(1)}
-                     else if(r == IntExp(1)) {l} 
-                     else {DivExp(simplify(l), simplify(r))};
-        MinusExp(expression): MinusExp(simplify(expression));
-        IntExp(v): IntExp(v);
-        VarExp(name): VarExp(name); 
-    }
-}
 
 main(){
     //expr:ArExp = SumExp(SumExp(IntExp(2),IntExp(3)),MultExp(IntExp(1),SumExp(IntExp(3),VarExp("x"))));
@@ -182,6 +25,10 @@ main(){
     r1 = Rational(1, 2);
     r2 = Rational(1, 3);
 
-    println(r2s(subRationals(r1, r2)));
+    expr5 = s2ar("(1/((3/2)+(1/2)))");
+    switch(eval(expr5, vars)){
+        Some(v): println(ar2s(expr5) + " = " + r2s(v));
+        None(): println("Error");
+    }
 
 }

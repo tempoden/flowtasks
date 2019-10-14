@@ -14,7 +14,45 @@ MinusExp(expr: ArExp);
 IntExp(val:int);
 VarExp(name:string);
 
+Rational(num: int, den: int);
+
 gram="#include arexp.gram"
+
+multRationals(l: Rational, r: Rational) -> Rational{
+    cdiv = gcd(l.num * r.num, l.den * r.den);
+    Rational((l.num * r.num)/cdiv, (l.den * r.den)/cdiv);
+}
+
+divRationals(l: Rational, r: Rational) -> Rational{
+    cdiv = gcd(l.num * r.den, l.den * r.num);
+    Rational((l.num * r.den)/cdiv, (l.den * r.num)/cdiv);
+}
+
+sumRationals(l: Rational, r: Rational) -> Rational{
+    if(l.den == r.den){
+        Rational(l.num + r.num, l.den);
+    } else {
+        cdiv = gcd(l.num * r.den + r.num * l.den, l.den * r.den);
+        Rational((l.num * r.den + r.num * l.den)/cdiv, (l.den * r.den)/cdiv);
+    }
+}
+
+subRationals(l: Rational, r: Rational) -> Rational{
+    if(l.den == r.den){
+        Rational(l.num - r.num, l.den);
+    } else {
+        cdiv = gcd(l.num * r.den - r.num * l.den, l.den * r.den);
+        Rational((l.num * r.den - r.num * l.den)/cdiv, (l.den * r.den)/cdiv);
+    }
+}
+
+r2s(e:Rational) -> string{
+    if (e.den == 1){
+        i2s(e.num);
+    } else {
+        concatStrings([i2s(e.num), "/", i2s(e.den)]);
+    }
+}
 
 ar2s(e:ArExp) -> string{
     switch (e) {
@@ -41,12 +79,12 @@ ar2i(e:ArExp) -> int{
     }
 }*/
 
-eval(expr: ArExp, var_vals: Tree<string, int>) -> Maybe<int>{
+eval(expr: ArExp, var_vals: Tree<string, int>) -> Maybe<Rational>{
     switch(expr){
         SumExp(l,r): 
             switch(eval(l, var_vals)){
                 Some(lft): switch(eval(r,var_vals)){
-                    Some(rht): Some(lft+rht);
+                    Some(rht): Some(sumRationals(lft, rht));
                     None(): None();
                 };
                 None(): None();
@@ -54,7 +92,7 @@ eval(expr: ArExp, var_vals: Tree<string, int>) -> Maybe<int>{
         MultExp(l,r): 
             switch(eval(l,var_vals)){
                 Some(lft): switch(eval(r,var_vals)){
-                    Some(rht): Some(lft*rht);
+                    Some(rht): Some(multRationals(lft, rht));
                     None(): None();
                 };
                 None(): None();
@@ -62,7 +100,7 @@ eval(expr: ArExp, var_vals: Tree<string, int>) -> Maybe<int>{
         SubExp(l,r): 
             switch(eval(l,var_vals)){
                 Some(lft): switch(eval(r,var_vals)){
-                    Some(rht): Some(lft-rht);
+                    Some(rht): Some(subRationals(lft, rht));
                     None(): None();
                 };
                 None(): None();
@@ -70,16 +108,16 @@ eval(expr: ArExp, var_vals: Tree<string, int>) -> Maybe<int>{
         DivExp(l,r): 
             switch(eval(l,var_vals)){
                 Some(lft): switch(eval(r,var_vals)){
-                    Some(rht): if(rht == 0){ None(); } else {Some(lft/rht)};
+                    Some(rht): if(rht.num == 0){ None(); } else {Some(divRationals(lft, rht))};
                     None(): None();
                 };
                 None(): None();
             };
         MinusExp(expression): eval( SubExp(IntExp(0), expression) ,var_vals);
-        IntExp(v): Some(v);
+        IntExp(v): Some(Rational(v, 1));
         VarExp(name): 
             switch(lookupTree(var_vals, name)){
-                Some(v): Some(v);
+                Some(v): Some(Rational(v, 1));
                 None(): None();
             };
     }
@@ -126,12 +164,12 @@ main(){
     vars = setTree(makeTree(), "x", 5);
     expr = s2ar("((2+3)+(1*(3+x)))");
     switch(eval(expr, vars)){
-        Some(v): println(ar2s(expr) + " = " + i2s(v));
+        Some(v): println(ar2s(expr) + " = " + r2s(v));
         None(): println("Error");
     }
     expr2 = s2ar("((((-x) * x)*4)/2)");
     switch(eval(expr2, vars)){
-        Some(v): println(ar2s(expr2) + " = " + i2s(v));
+        Some(v): println(ar2s(expr2) + " = " + r2s(v));
         None(): println("Error");
     }
     expr4 = s2ar("(x*x)");
@@ -140,4 +178,10 @@ main(){
     expr3 = s2ar("(((x-2)*(x+(4+y)))/x)");
     println(ar2s(diff(expr3, "x")));
     println(ar2s(simplify(simplify(simplify(diff(expr3, "x"))))));
+    
+    r1 = Rational(1, 2);
+    r2 = Rational(1, 3);
+
+    println(r2s(subRationals(r1, r2)));
+
 }

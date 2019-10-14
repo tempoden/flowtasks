@@ -1,0 +1,33 @@
+import arexp;
+
+export {
+    Polynomial(mons: [Monomial]);
+    Monomial(terms: [Factor]);
+    Factor ::= IntExp, ExtVarExp;
+    ExtVarExp(var : VarExp, power: int);
+
+    p2s(p: Polynomial) -> string;
+    m2s(m: Monomial) -> string;
+}
+
+p2s(p: Polynomial) -> string{
+    strs = map(subrange(p.mons, 0, length(p.mons) - 1),\m -> concatStrings([m2s(m), " + "]));
+    concatStrings(concat(strs, [m2s(p.mons[length(p.mons) - 1])]));
+}
+
+m2s(m: Monomial) -> string{
+    strs = map(subrange(m.terms, 0, length(m.terms) - 1), 
+        \e -> switch (e) {
+            IntExp(v): concatStrings([i2s(v), " * "]); 
+            ExtVarExp(v, p): concatStrings([v.name, "^", i2s(p), " * "]);
+        }
+        
+    );
+
+    last = switch (m.terms[length(m.terms) - 1]) {
+        IntExp(v): i2s(v); 
+        ExtVarExp(v, p): concatStrings([v.name, "^", i2s(p)]);
+    }
+
+    concatStrings(concat(strs, [last]));
+}

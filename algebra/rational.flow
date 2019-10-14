@@ -3,10 +3,12 @@ import string;
 
 export {
     Rational(num: int, den: int);
+
     multRationals(l: Rational, r: Rational) -> Rational;  
     divRationals(l: Rational, r: Rational) -> Rational;  
     sumRationals(l: Rational, r: Rational) -> Rational;
     subRationals(l: Rational, r: Rational) -> Rational;
+    
     r2s(e: Rational) -> string;
 }
 

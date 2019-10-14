@@ -7,7 +7,7 @@ import lingo/pegcode/driver;
 import rational;
 
 export {
-    ArExp::=SumExp, MultExp, SubExp, DivExp, MinusExp,IntExp, VarExp;
+    ArExp::=SumExp, MultExp, SubExp, DivExp, MinusExp, IntExp, VarExp;
 
     SumExp(lhs:ArExp,rhs:ArExp);
     MultExp(lhs:ArExp,rhs:ArExp);

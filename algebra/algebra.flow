@@ -1,6 +1,6 @@
 import rational;
 import arexp;
-
+import polynom;
 
 main(){
     //expr:ArExp = SumExp(SumExp(IntExp(2),IntExp(3)),MultExp(IntExp(1),SumExp(IntExp(3),VarExp("x"))));
@@ -31,4 +31,6 @@ main(){
         None(): println("Error");
     }
 
+    pol = Polynomial([Monomial([IntExp(2), ExtVarExp(VarExp("x"), 3)])]);
+    println(p2s(pol));
 }

@@ -2,6 +2,8 @@ import rational;
 import arexp;
 import polynom;
 
+
+
 main(){
     //expr:ArExp = SumExp(SumExp(IntExp(2),IntExp(3)),MultExp(IntExp(1),SumExp(IntExp(3),VarExp("x"))));
     vars = setTree(makeTree(), "x", 5);
@@ -31,6 +33,10 @@ main(){
         None(): println("Error");
     }
 
-    pol = Polynomial([Monomial([IntExp(2), ExtVarExp(VarExp("x"), 3)])]);
-    println(p2s(pol));
+    pp1 = PolyProd(setTreeValues(makeTree(), [Pair("x",1), Pair("y",2), Pair("z",3)]));
+    pp2 = PolyProd(setTreeValues(makeTree(), [Pair("x",3), Pair("k",1)]));
+    println(pp2s(multPolyProds(pp1, pp2)));
+    p1 = Polynom(setTreeValues(makeTree(), [Pair(pp1, Rational(2,1)), Pair(pp2, Rational(3,1))]));
+    p2 = Polynom(setTree(makeTree(), pp2, Rational(1,1)));
+    println("("+p2s(p1) + ") * ("+p2s(p2)+")" + " = " + p2s(multPolynoms(p1, p2)));
 }

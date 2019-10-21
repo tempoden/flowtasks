@@ -1,33 +1,72 @@
 import arexp;
+import ds/tree;
+import rational;
 
 export {
-    Polynomial(mons: [Monomial]);
-    Monomial(terms: [Factor]);
-    Factor ::= IntExp, ExtVarExp;
-    ExtVarExp(var : VarExp, power: int);
-
-    p2s(p: Polynomial) -> string;
-    m2s(m: Monomial) -> string;
+    Polynom(sum: Tree<PolyProd, Rational>);
+    PolyProd(prod: Tree<string, int>);
+    //RationalFunction(nominator: Polynom, denominator: Polynom);
+    sumPolynoms(l: Polynom, r: Polynom) -> Polynom;
+    multPolynoms(l: Polynom, r: Polynom) -> Polynom;
+    multPolyProds(l: PolyProd, r: PolyProd) -> PolyProd;
+    p2s(p: Polynom) -> string;
+    pp2s(pp: PolyProd) -> string;
 }
 
-p2s(p: Polynomial) -> string{
-    strs = map(subrange(p.mons, 0, length(p.mons) - 1),\m -> concatStrings([m2s(m), " + "]));
-    concatStrings(concat(strs, [m2s(p.mons[length(p.mons) - 1])]));
-}
 
-m2s(m: Monomial) -> string{
-    strs = map(subrange(m.terms, 0, length(m.terms) - 1), 
-        \e -> switch (e) {
-            IntExp(v): concatStrings([i2s(v), " * "]); 
-            ExtVarExp(v, p): concatStrings([v.name, "^", i2s(p), " * "]);
-        }
-        
-    );
-
-    last = switch (m.terms[length(m.terms) - 1]) {
-        IntExp(v): i2s(v); 
-        ExtVarExp(v, p): concatStrings([v.name, "^", i2s(p)]);
+/*alg2rat(e: arexp) -> RationalFunction{
+    switch (e) {
+        SumExp(l,r): concatStrings(["(",ar2s(l),"+",ar2s(r),")"]);
+        MultExp(l,r):concatStrings(["(",ar2s(l),"*",ar2s(r),")"]);
+        SubExp(l,r): concatStrings(["(",ar2s(l),"-",ar2s(r),")"]);
+        DivExp(l,r): concatStrings(["(",ar2s(l),"/",ar2s(r),")"]);
+        MinusExp(expr): concatStrings(["-",ar2s(expr)]);
+        IntExp(v): i2s(v);
+        VarExp(name): name;
     }
+}*/
 
-    concatStrings(concat(strs, [last]));
+multPolyProds(l: PolyProd, r: PolyProd) -> PolyProd{
+    /*PolyProd(foldTree(l.prod, makeTree(), \lv,lp,acc -> {
+            foldTree(r.prod, acc,\rv, rp, ac -> {
+                    switch(lookupTree(l.prod, rv)){
+                        Some(v): if(lv == rv){
+                            setTree(ac, lv,lp + rp);
+                        } else {
+                            switch(lookupTree(r.prod, lv)){
+                                Some(vt): ac;
+                                None(): setTree(ac, lv, lp);
+                            }
+                        };
+                        None(): setTree(ac, rv, rp);
+                    }                    
+                }
+            )
+        }
+    ))*/
+    PolyProd(mergeTreeCustom(l.prod, r.prod, \k, lv, rv -> rv + lv));
+}
+
+sumPolynoms(l: Polynom, r: Polynom){
+    Polynom(mergeTreeCustom(l.sum, r.sum, \k, lv, rv -> sumRationals(lv, rv)));
+}
+
+multPolynoms(l: Polynom, r: Polynom){
+    Polynom(foldTree(l.sum, makeTree(), \lp, lc,acc -> {
+        foldTree(r.sum, acc, \rp, rc, ac -> {
+            pp = multPolyProds(lp, rp);
+            switch(lookupTree(ac, pp)){
+                Some(coef): setTree(ac, pp, sumRationals(coef ,multRationals(lc, rc)));
+                None(): setTree(ac, pp, multRationals(lc, rc));
+            }     
+        })
+    }))
+}
+
+p2s (e: Polynom) -> string{
+    trim2(concatStrings(foldTree(e.sum, [], \k,v,acc -> concat(acc, [r2s(v) + pp2s(k) + " + "]))), " +")
+}
+
+pp2s (e: PolyProd) -> string{
+    concatStrings(foldTree(e.prod , [], \k,v,acc -> concat(acc, [k + "^" + i2s(v)])))
 }

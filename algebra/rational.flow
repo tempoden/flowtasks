@@ -8,6 +8,7 @@ export {
     divRationals(l: Rational, r: Rational) -> Rational;  
     sumRationals(l: Rational, r: Rational) -> Rational;
     subRationals(l: Rational, r: Rational) -> Rational;
+    minusRational(r: Rational) -> Rational;
     
     r2s(e: Rational) -> string;
 }
@@ -41,6 +42,10 @@ subRationals(l: Rational, r: Rational) -> Rational{
         cdiv = gcd(l.num * r.den - r.num * l.den, l.den * r.den);
         Rational((l.num * r.den - r.num * l.den)/cdiv, (l.den * r.den)/cdiv);
     }
+}
+
+minusRational(r: Rational) -> Rational{
+    Rational(- r.num, r.den);
 }
 
 r2s(e:Rational) -> string{

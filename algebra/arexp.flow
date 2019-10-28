@@ -116,7 +116,7 @@ simplify(expr: ArExp) -> ArExp{
         SubExp(l,r): if(l == IntExp(0) && r == IntExp(0)) {IntExp(0)} 
                      else if( l == r ) {IntExp(0)}
                      else if(l == IntExp(0)) {r}
-                     else if (r == IntExp(0)) {l}
+                     else if (r == IntExp(0)) {MinusExp(l)}
                      else {SubExp(simplify(l), simplify(r))};
         MultExp(l,r): if( l == IntExp(0) || r == IntExp(0)) {IntExp(0)} 
                      else if(l == IntExp(1)) {r}

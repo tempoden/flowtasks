@@ -36,7 +36,10 @@ main(){
     pp1 = PolyProd(setTreeValues(makeTree(), [Pair("x",1), Pair("y",2), Pair("z",3)]));
     pp2 = PolyProd(setTreeValues(makeTree(), [Pair("x",3), Pair("k",1)]));
     println(pp2s(multPolyProds(pp1, pp2)));
-    p1 = Polynom(setTreeValues(makeTree(), [Pair(pp1, Rational(2,1)), Pair(pp2, Rational(3,1))]));
-    p2 = Polynom(setTree(makeTree(), pp2, Rational(1,1)));
+    p1 = Polynom(setTreeValues(makeTree(), [Pair(pp1, 2), Pair(pp2, 3)]));
+    p2 = Polynom(setTree(makeTree(), pp2, 1));
     println("("+p2s(p1) + ") * ("+p2s(p2)+")" + " = " + p2s(multPolynoms(p1, p2)));
+    println(rf2s(alg2rf(s2ar("(((x*y)/2) + (y/x))"))));
+    println(rf2s(alg2rf(s2ar("(((((9*x)*x)-4)/((3*x)+2)) - (3*x))"))));
+    println(rf2s(alg2rf(s2ar("((((4*a)*a)-9)*((1/((2*a)-3))-(1/((2*a)+3))))"))));
 }

@@ -3,26 +3,74 @@ import ds/tree;
 import rational;
 
 export {
-    Polynom(sum: Tree<PolyProd, Rational>);
+    Polynom(sum: Tree<PolyProd, int>);
     PolyProd(prod: Tree<string, int>);
-    //RationalFunction(nominator: Polynom, denominator: Polynom);
+    RationalFunction(num: Polynom, den: Polynom);
+    alg2rf(e: ArExp) -> RationalFunction;
     sumPolynoms(l: Polynom, r: Polynom) -> Polynom;
     multPolynoms(l: Polynom, r: Polynom) -> Polynom;
     multPolyProds(l: PolyProd, r: PolyProd) -> PolyProd;
     p2s(p: Polynom) -> string;
     pp2s(pp: PolyProd) -> string;
+    rf2s(rf: RationalFunction) -> string;
+}
+
+alg2rf(e: ArExp) -> RationalFunction{
+    switch (e) {
+        SumExp(l,r): sumRationalFunctions(alg2rf(l) , alg2rf(r));
+        MultExp(l,r): multRationalFunctions(alg2rf(l), alg2rf(r));
+        SubExp(l,r): subRationalFunctions(alg2rf(l), alg2rf(r));
+        DivExp(l,r): divRationalFunctions(alg2rf(l), alg2rf(r));
+        MinusExp(expr): minusRationalFunction(alg2rf(expr));
+        IntExp(v): RationalFunction(
+            Polynom(setTree(makeTree(), PolyProd(makeTree()), v)),
+            Polynom(setTree(makeTree(), PolyProd(makeTree()), 1))
+        );
+        VarExp(name): RationalFunction(
+            Polynom(setTree(makeTree(), PolyProd(setTreeValues(makeTree(),[Pair(name, 1)])), 1)),
+            Polynom(setTree(makeTree(), PolyProd(makeTree()), 1))
+        );
+    }
+}
+
+sumRationalFunctions(l: RationalFunction, r: RationalFunction) -> RationalFunction{
+    RationalFunction(sumPolynoms(multPolynoms(l.num, r.den), multPolynoms(r.num, l.den)), 
+                     multPolynoms(l.den, r.den));
+}
+
+subRationalFunctions(l: RationalFunction, r: RationalFunction) -> RationalFunction{
+    RationalFunction(sumPolynoms(multPolynoms(l.num, r.den), minusPolynom(multPolynoms(r.num, l.den))), 
+                     multPolynoms(l.den, r.den))
+}
+
+multRationalFunctions(l: RationalFunction, r: RationalFunction) -> RationalFunction{
+    RationalFunction(multPolynoms(l.num, r.num), multPolynoms(l.den, r.den));
+}
+
+divRationalFunctions(l: RationalFunction, r: RationalFunction) -> RationalFunction{
+    RationalFunction(multPolynoms(l.num, r.den), multPolynoms(l.den, r.num));
+}
+
+minusRationalFunction(rf: RationalFunction) -> RationalFunction{
+    RationalFunction(minusPolynom(rf.num), rf.den);
 }
 
 
-/*alg2rat(e: arexp) -> RationalFunction{
+minusPolynom(p: Polynom) -> Polynom{
+    Polynom(mapTree(p.sum, \r -> -r));
+}
+
+/*ar2p(e: ArExp) -> Polynom{
     switch (e) {
-        SumExp(l,r): concatStrings(["(",ar2s(l),"+",ar2s(r),")"]);
-        MultExp(l,r):concatStrings(["(",ar2s(l),"*",ar2s(r),")"]);
-        SubExp(l,r): concatStrings(["(",ar2s(l),"-",ar2s(r),")"]);
-        DivExp(l,r): concatStrings(["(",ar2s(l),"/",ar2s(r),")"]);
-        MinusExp(expr): concatStrings(["-",ar2s(expr)]);
-        IntExp(v): i2s(v);
-        VarExp(name): name;
+        SumExp(l, r):
+            sumPolynoms(ar2p(l), ar2p(r));
+        MultExp(l, r):
+            multPolynoms(ar2p(l), ar2s(r));
+        IntExp(val):
+            Polynom(setTree(makeTree(), PolyProd(makeTree()), Rational(val,1)));
+        VarExp(var):
+            Polynom(setTree(makeTree(), PolyProd(setTreeValues(makeTree(),[Pair(var, 1)])), Rational(1,1)));
+        default
     }
 }*/
 
@@ -48,7 +96,7 @@ multPolyProds(l: PolyProd, r: PolyProd) -> PolyProd{
 }
 
 sumPolynoms(l: Polynom, r: Polynom){
-    Polynom(mergeTreeCustom(l.sum, r.sum, \k, lv, rv -> sumRationals(lv, rv)));
+    Polynom(mergeTreeCustom(l.sum, r.sum, \k, lv, rv -> lv + rv));
 }
 
 multPolynoms(l: Polynom, r: Polynom){
@@ -56,17 +104,21 @@ multPolynoms(l: Polynom, r: Polynom){
         foldTree(r.sum, acc, \rp, rc, ac -> {
             pp = multPolyProds(lp, rp);
             switch(lookupTree(ac, pp)){
-                Some(coef): setTree(ac, pp, sumRationals(coef ,multRationals(lc, rc)));
-                None(): setTree(ac, pp, multRationals(lc, rc));
+                Some(coef): setTree(ac, pp, coef + (lc * rc));
+                None(): setTree(ac, pp, (lc * rc));
             }     
         })
     }))
 }
 
 p2s (e: Polynom) -> string{
-    trim2(concatStrings(foldTree(e.sum, [], \k,v,acc -> concat(acc, [r2s(v) + pp2s(k) + " + "]))), " +")
+    trim2(concatStrings(foldTree(e.sum, [], \k,v,acc -> concat(acc, [i2s(v) + pp2s(k) + " + "]))), " +")
 }
 
 pp2s (e: PolyProd) -> string{
     concatStrings(foldTree(e.prod , [], \k,v,acc -> concat(acc, [k + "^" + i2s(v)])))
+}
+
+rf2s(rf: RationalFunction) -> string{
+    concatStrings(["{", p2s(rf.num) ,"} / {", p2s(rf.den) ,"}"]);
 }

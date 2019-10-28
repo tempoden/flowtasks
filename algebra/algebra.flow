@@ -40,6 +40,7 @@ main(){
     p2 = Polynom(setTree(makeTree(), pp2, 1));
     println("("+p2s(p1) + ") * ("+p2s(p2)+")" + " = " + p2s(multPolynoms(p1, p2)));
     println(rf2s(alg2rf(s2ar("(((x*y)/2) + (y/x))"))));
-    println(rf2s(alg2rf(s2ar("(((((9*x)*x)-4)/((3*x)+2)) - (3*x))"))));
-    println(rf2s(alg2rf(s2ar("((((4*a)*a)-9)*((1/((2*a)-3))-(1/((2*a)+3))))"))));
+    println("Now we can simplify alg exps without variables values (end evaluate them if we have enough data)");
+    println("(((((9*x)*x)-4)/((3*x)+2)) - (3*x)) = " + rf2s(alg2rf(s2ar("(((((9*x)*x)-4)/((3*x)+2)) - (3*x))"))));
+    println("((((4*a)*a)-9)*((1/((2*a)-3))-(1/((2*a)+3)))) = " + rf2s(alg2rf(s2ar("((((4*a)*a)-9)*((1/((2*a)-3))-(1/((2*a)+3))))"))));
 }

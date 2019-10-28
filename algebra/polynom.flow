@@ -42,11 +42,36 @@ alg2rf(e: ArExp) -> RationalFunction{
             Polynom(setTree(makeTree(), PolyProd(makeTree()), 1))
         );
     }
-    RationalFunction(filterPolynom(rf.num), filterPolynom(rf.den));
+    rf2 = RationalFunction(filterPolynom(rf.num), filterPolynom(rf.den));
+    polyGCD = gcd(coefGCD(rf2.num), coefGCD(rf2.den));
+    rf3 = divRationalFunctionByInt(rf2, polyGCD);
+    numGCD = coefGCD(rf3.num);
+    rf3_num = divPolynomByInt(rf3.num, numGCD);
+    if(rf3_num == rf3.den){
+        RationalFunction(
+            Polynom(setTree(makeTree(), PolyProd(makeTree()), numGCD)),
+            Polynom(setTree(makeTree(), PolyProd(makeTree()), 1))
+        );
+    }else{
+        rf3;
+    }
 }
 
 filterPolynom(p: Polynom) -> Polynom{
     Polynom(filterTree(p.sum, \k,v -> v!=0));
+}
+
+coefGCD(p: Polynom)->int{
+    initial = getTreeValues(p.sum)[0];
+    foldTree(p.sum, initial, \k,v,acc -> gcd(acc,v));
+}
+
+divPolynomByInt(p: Polynom, c: int) -> Polynom{
+    Polynom(mapTree(p.sum, \v -> v/c ));
+}
+
+divRationalFunctionByInt(rf: RationalFunction, c: int) -> RationalFunction{
+    RationalFunction(divPolynomByInt(rf.num, c), divPolynomByInt(rf.den, c));
 }
 
 sumRationalFunctions(l: RationalFunction, r: RationalFunction) -> RationalFunction{
@@ -136,5 +161,9 @@ pp2s (e: PolyProd) -> string{
 }
 
 rf2s(rf: RationalFunction) -> string{
-    concatStrings(["{", p2s(rf.num) ,"} / {", p2s(rf.den) ,"}"]);
+    if(rf.den ==  Polynom(setTree(makeTree(), PolyProd(makeTree()), 1))){
+        p2s(rf.num);
+    } else {
+        concatStrings(["{", p2s(rf.num) ,"} / {", p2s(rf.den) ,"}"]);
+    }
 }

@@ -6,17 +6,28 @@ export {
     Polynom(sum: Tree<PolyProd, int>);
     PolyProd(prod: Tree<string, int>);
     RationalFunction(num: Polynom, den: Polynom);
+
     alg2rf(e: ArExp) -> RationalFunction;
+
+    sumRationalFunctions(l: RationalFunction, r: RationalFunction) -> RationalFunction;
+    subRationalFunctions(l: RationalFunction, r: RationalFunction) -> RationalFunction;
+    multRationalFunctions(l: RationalFunction, r: RationalFunction) -> RationalFunction;
+    divRationalFunctions(l: RationalFunction, r: RationalFunction) -> RationalFunction;
+    minusRationalFunction(rf: RationalFunction) -> RationalFunction;
+
     sumPolynoms(l: Polynom, r: Polynom) -> Polynom;
     multPolynoms(l: Polynom, r: Polynom) -> Polynom;
+    minusPolynom(p: Polynom) -> Polynom;
+
     multPolyProds(l: PolyProd, r: PolyProd) -> PolyProd;
+
     p2s(p: Polynom) -> string;
     pp2s(pp: PolyProd) -> string;
     rf2s(rf: RationalFunction) -> string;
 }
 
 alg2rf(e: ArExp) -> RationalFunction{
-    switch (e) {
+    rf = switch (e) {
         SumExp(l,r): sumRationalFunctions(alg2rf(l) , alg2rf(r));
         MultExp(l,r): multRationalFunctions(alg2rf(l), alg2rf(r));
         SubExp(l,r): subRationalFunctions(alg2rf(l), alg2rf(r));
@@ -31,6 +42,11 @@ alg2rf(e: ArExp) -> RationalFunction{
             Polynom(setTree(makeTree(), PolyProd(makeTree()), 1))
         );
     }
+    RationalFunction(filterPolynom(rf.num), filterPolynom(rf.den));
+}
+
+filterPolynom(p: Polynom) -> Polynom{
+    Polynom(filterTree(p.sum, \k,v -> v!=0));
 }
 
 sumRationalFunctions(l: RationalFunction, r: RationalFunction) -> RationalFunction{

@@ -1,0 +1,15 @@
+import maybe;
+import ds/tree;
+import ds/array;
+import string;
+
+export {
+    Dict: Tree<string, VarValue>
+    VarValue::=int, Array;
+    Array(state: Tree<VarValue, VarValue>);
+    Commands: Tree<int, Operator>;
+    Operator ::= Assign, CondOP, Print;
+    CondOP(condition: Cond, true_ : int[], false_: int[]);
+    Cond(cmp_op: str, r: Expr, l: Expr);
+    //операторы: присваивание, условный, вывод
+}

@@ -1,0 +1,53 @@
+import string;
+import lingo/pegcode/driver;
+import ds/tree;
+import math/math;
+import runtime;
+
+Declaration(var: string, type: VMType);
+VMType ::= IntType, ArrayType;
+IntType();
+ArrayType(type: VMType);
+
+Expression ::= NmInt, NmVar, NmBinOp, NmApp, NmUpd, NmUnOp;
+NmInt(value: int);
+NmVar(name: string);
+
+NmApp(ar: Expression, ind: Expression);
+NmUpd(ar: Expression, ind: Expression, value: Expression);
+
+NmBinOp(op: string, lhs: Expression, rhs: Expression);
+NmUnOp(op: string, e: Expression);
+
+//Instruction(label: int, state: State);
+State ::= NmAssign, NmTest, NmPrint, NmSeq, NmChoice, NmLoop, l_not;
+NmAssign(v: string, r: Expression);
+NmChoice(l: State, r: State);
+NmTest(op:string, lhs: Expression, rhs: Expression);
+NmSeq(l: State, r: State);
+NmLoop(st: State);
+
+NmPrint(v: Expression);
+
+l_not(test: NmTest);
+
+Programm(decl: [Declaration], instructions: State);
+
+buildWhile(arr: [flow]) -> NmSeq{
+    test = NmTest(arr[0], arr[1], arr[2]);
+    NmSeq(NmLoop(NmSeq(test, arr[3])), l_not(test));
+}  
+
+s2nem(s: string) -> Programm 
+{
+    custom = SemanticActions(setTree(defaultPegActions.t, "buildWhile", buildWhile));
+	gr = "#include nemoGrammar.flow";
+	parsic(compilePegGrammar(gr), s, custom);
+}
+
+main() {
+    prog2 ="var x : int;\nvar y : [int];\nvar z : [[int]];\n(x := 10; y := 5)";
+	println(prog2);
+	programm = s2nem(prog2);
+	println(programm);
+}

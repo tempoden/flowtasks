@@ -1,0 +1,230 @@
+import string;
+import lingo/pegcode/driver;
+import ds/tree;
+import math/math;
+import runtime;
+
+Declaration(var: string, type: VMType);
+VMType ::= IntType, ArrayType;
+IntType();
+ArrayType(type: VMType);
+
+NemoVariable ::= Int, Array;
+Array(arrayOf: [NemoVariable]);
+
+Expression ::= Int, Var, BinOp;// App, Upd;
+Int(value: int);
+Var(name: string);
+
+App(ar: Expression, ind: Expression);
+Upd(ar: Expression, ind: Expression, value: Expression);
+
+BinOp(op: string, lhs: Expression, rhs: Expression);
+
+Instruction(label: int, state: State);
+State ::= Assign, Cond, Print;
+Assign(v: string, r: Expression, Goto: [int]);
+Cond(cond: Expression, ifStatement: [int], elseStatement: [int]);
+Print(v: Expression, Goto: [int]);
+
+
+Programm(decl: [Declaration], instructions: [Instruction]);
+
+St(m: int, instructions: [Instruction], vars: Tree<string, NemoVariable>);
+
+s2nem(s: string) -> Programm 
+{
+	gr = "#include nemovmGrammar.flow";
+	parsic(compilePegGrammar(gr), s, defaultPegActions);
+}
+
+GetVarByType(vmtype: VMType) -> NemoVariable
+{
+	switch (vmtype)
+	{
+		IntType(): Int(0);
+		ArrayType(arrayOf): Array([GetVarByType(arrayOf)]);
+	}
+}
+
+DeclareVariables(decl : [Declaration]) -> Tree<string, NemoVariable>
+{
+	fold(decl, makeTree(), \acc, declStatement ->
+	{
+		setTree(acc, declStatement.var, GetVarByType(declStatement.type));
+	});
+}
+
+n2s(v: NemoVariable) -> string{
+	switch(v){
+		Int(a): i2s(a);
+		Array(arr): "lulw";
+	}
+}
+
+evalBinOp(op: string, l: Expression, r: Expression, var_vals: Tree<string, NemoVariable>) -> int{
+	//SWEET DREAMS
+	/*switch(op){
+		"+": eval(l, var_vals) + eval(r, var_vals);
+		"-": eval(l, var_vals) - eval(r, var_vals);
+		"*": eval(l, var_vals) * eval(r, var_vals);
+		"/": eval(l, var_vals) / eval(r, var_vals);
+		"%": eval(l, var_vals) % eval(r, var_vals);
+		"==": if(eval(l, var_vals) == eval(r, var_vals)){ 1 } else { 0 };
+	}*/
+	if(op == "+"){
+		eval(l, var_vals) + eval(r, var_vals);
+	}
+	else if(op == "-"){
+		eval(l, var_vals) - eval(r, var_vals);
+	}
+	else if(op == "*"){
+		eval(l, var_vals) * eval(r, var_vals);
+	}
+	else if(op == "/"){
+		eval(l, var_vals) / eval(r, var_vals);
+	}
+	else if(op == "%"){
+		eval(l, var_vals) % eval(r, var_vals);
+	}
+	else if(op == "=="){
+		if(eval(l, var_vals) == eval(r, var_vals)){ 1 } else { 0 };
+	}
+	else if(op == "!="){
+		if(eval(l, var_vals) != eval(r, var_vals)){ 1 } else { 0 };
+	}
+	else if(op == "<="){
+		if(eval(l, var_vals) <= eval(r, var_vals)){ 1 } else { 0 };
+	}
+	else if(op == ">="){
+		if(eval(l, var_vals) >= eval(r, var_vals)){ 1 } else { 0 };
+	}
+	else if(op == "<"){
+		if(eval(l, var_vals) < eval(r, var_vals)){ 1 } else { 0 };
+	}
+	else if(op == ">"){
+		if(eval(l, var_vals) > eval(r, var_vals)){ 1 } else { 0 };
+	}
+	else{
+		quit(-1);
+		0;
+	}
+}
+
+eval(e: Expression, var_vals: Tree<string, NemoVariable>) -> int{
+	switch(e){
+		BinOp(op, l, r): evalBinOp(op, l, r, var_vals);
+		Int(v): v;
+		Var(name):
+		switch(lookupTree(var_vals, name)){
+                Some(v1): 
+					switch(v1){
+						Int(val): val;
+						Array(arr): {println("Smth terrible happened"); 0;};
+					};
+                None(): {println("Smth terrible happened"); 0;};
+            };
+	}
+}
+
+//TODO: Структура с полями 1)Массив меток, 2)Состояние программы (дерево с переменными), 3)Массив инструкций
+//		условие выхода - метка попала за пределы множества меток.
+// На вход функция получает массив из таких структур и каждую структуру переводит в одну или несколько (в зависимости от меток)
+// St(m: int, instructions: [Instruction], vars: Tree<string, NemoVariable>);
+//Instruction(label: int, state: State);
+//State ::= Assign, Cond, Print;
+//Assign(v: string, r: Expression, Goto: [int]);
+//Cond(cond: Expression, ifStatement: [int], elseStatement: [int]);
+//Print(v: Expression, Goto: [int])
+
+performAssign(name: string, r: Expression, m: [int], inst: [Instruction], vars: Tree<string, NemoVariable>) -> [St]{
+	new_tree = foldTree(vars, makeTree(), \k, v: NemoVariable, acc -> {
+		if( k == name ){
+			setTree(acc, k, Int(eval(r, vars)));
+		} else {
+			setTree(acc, k, v);
+		}
+    });
+	map(m, \n -> St(n, inst, new_tree));
+}
+
+performCond(cond: Expression, ifm: [int], elm: [int], inst: [Instruction], vars: Tree<string, NemoVariable>) -> [St]{
+	if(eval(cond, vars) == 0){
+		map(elm, \n -> St(n, inst, vars));
+	} else {
+		map(ifm, \n -> St(n, inst, vars));
+	}
+}
+
+performPrint(e: Expression, m: [int], inst: [Instruction], vars: Tree<string, NemoVariable>) -> [St]{
+	println(eval(e, vars));
+	map(m, \n -> St(n, inst, vars));
+}
+
+execute(st: [St]) -> [St]{
+	fold(st, [], \acc, s -> {
+		//println(s.m);
+		//println("{" + concatStrings(foldTree(s.vars , [], \k,v,ac -> concat(ac, ["(" + k + ":" + n2s(v) + ")"]))) + "}");
+		concat(acc, 
+			switch(s.instructions[s.m].state){
+				Assign(v,r,m): performAssign(v, r, m, s.instructions, s.vars);
+				Cond(cond, ifm, elm): performCond(cond, ifm, elm, s.instructions, s.vars);
+				Print(v, m): performPrint(v, m, s.instructions, s.vars);
+			}
+		)}
+	)
+}
+
+checkMarks(st: [St]) -> bool{
+	//println(forall(st, \s -> (s.m < length(s.instructions))));
+	//println(s.instructions);
+	//println(length(st[0].instructions));
+	forall(st, \s -> (s.m < length(s.instructions)));
+}
+
+main() {
+//	prog = "var x: int;\nvar y : [int];\nvar z : [[int]];\n0 : x = 10 goto { 1 };\n 1: if((x >= x)) {} else {};\n 2: print\n( x ) goto { 0 } ;";
+	prog2 = getFileContent("test1.txt");
+	println(prog2);
+	programm = s2nem(prog2);
+	println(programm);
+	println("{" + concatStrings(foldTree(DeclareVariables(programm.decl) , [], \k,v,acc -> concat(acc, ["(" + k + ":" + n2s(v) + ")"]))) + "}");
+	println(eval(BinOp("<",Var("y"), BinOp("*", Var("x"), Int(1))), DeclareVariables(programm.decl)));
+	initial = [St(0, programm.instructions, DeclareVariables(programm.decl))];
+
+	for(initial, checkMarks, execute);
+
+	//println(DeclareVariables(programm.decl));
+	// a = Programm([
+		// Declaration("x", Int),
+		// Declaration("y", Array()),  // ??? 
+		// Assigment("x", Number(3), [2]),
+		// Condition(NotEqual())
+	// ])
+	
+	
+	//println("llallalal");
+}
+
+
+//\n upd(x, app(x, 1), app(x, 2));
+
+// AlgOperator ::= VNemoPlus, VNemoMinus, VNemoMult, VNemoDiv, VNemoMod;
+// VNemoPlus(l: Int, r: Int);
+// VNemoMinus(l: Int, r: Int);
+// VNemoMult(l: Int, r: Int);
+// VNemoDiv(l: Int, r: Int);
+// VNemoMod(l: Int, r: Int);
+
+
+
+// BoolOperator ::= NotEqual, Equal, LessOrEqual, MoreOrEqual, Less, More;
+// NotEqual(l: Int, r: Int);
+// Equal(l: Int, r: Int);
+// LessOrEqual(l: Int, r: Int);
+// MoreOrEqual(l: Int, r: Int);
+// Less(l: Int, r: Int);
+// More(l: Int, r: Int);
+
+// Programm(decl: [Declaration], );
+

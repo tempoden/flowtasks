@@ -1,0 +1,10 @@
+var x:int;
+var y:int;
+0: x = 4 goto {1};
+1: y = 0 goto {2};
+2: if ((x < 0)) goto {} else goto {3};
+3: y = (y + 1) goto { 3 4 5 };
+4: y = (y - 1) goto { 3 4 5 };
+5: if (((y + y) <= x)) goto {6} else goto {};
+6: if ((((y + y) + 2) > x)) goto {7} else goto {};
+7: print (y) goto {8};

@@ -1,0 +1,42 @@
+prog = ws decl*:d ws instruction*:i {Programm(:d, :i)};
+
+type = intType | arrayType;
+
+intType = "int" { IntType() };
+arrayType = "[" ws type:t ws "]" { ArrayType(:t) };
+
+decl = ws "var" ws word:v ws ":" ws type:t ws ";" ws { Declaration(:v, :t) };
+
+expr = int | var | binOp | app | upd;
+
+int = ws number:n { Int(:n) };
+
+var = ws word:w { Var(:w) };
+
+binOp = ws "(" ws expr:e1 ws binOperators:s ws expr:e2 ws ")" ws { BinOp(:s, :e1, :e2) };
+
+app = ws "app" ws "(" ws expr:e1 ws "," ws expr:e2 ws ")" ws ";" { App(:e1, :e2) };
+
+upd = ws "upd" ws "(" ws expr:e1 ws "," ws expr:e2 ws "," ws expr:e3 ws ")" ws ";" { Upd(:e1, :e2, :e3) };
+
+
+instruction = ws number:n ws ":" ws state:s ws { Instruction(:n, :s) };
+
+state = assign | cond | print;
+
+assign = ws word:l ws "=" ws expr:r ws "goto" ws "{" ws numSeq:goto ws "}" ws ";" ws { Assign(:l, :r, :goto) };
+
+cond = ws "if" ws "(" ws expr:condVar ws ")" ws "goto" ws "{" ws numSeq:goto1 ws "}" ws "else" ws "goto" ws "{" ws numSeq:goto2 ws "}" ws ";" ws { Cond(:condVar, :goto1, :goto2) };
+
+print = ws "print" ws "(" ws expr:e ws ")" ws "goto" ws "{" ws numSeq:goto ws "}" ws ";" ws { Print(:e, :goto) };
+
+
+numSeq = (number:n ws {:n})*:bb ws number?:aa { concat(:bb, :aa) };
+
+number = digit+ $s { s2i($s) };
+word = letter+ $s { $s };
+digit = '0' - '9';
+letter = 'a' - 'z';
+ws = (' ' | '\n' | '\r' | '\t' )*;
+
+binOperators = ( "==" | "<=" | ">=" | "<" | ">" | "+" | "*" | "/" | "-" | "%") $s { $s };

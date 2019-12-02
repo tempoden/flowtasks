@@ -1,0 +1,7 @@
+var x:int;
+var y:int;
+0: x = 4 goto {1};
+1: y = 0 goto {3};
+2: y = 2 goto {3};
+3: if(((x*y) == 0)) goto {2} else goto {4};
+4: print ((x*y)) goto{5};

@@ -1,0 +1,32 @@
+    prog = ws decl*:d ws state:i {Programm(:d, :i)};
+
+    type = intType | arrayType;
+
+    intType = "int" { IntType() };
+    arrayType = "[" ws type:t ws "]" { ArrayType(:t) };
+
+    decl = ws "var" ws id:v ws ":" ws type:t ws ";" ws { Declaration(:v, :t) };
+
+    state = print | test | seq | choice | loop | assign | while;
+
+    test   = "(" ws expr:e1 ws ("==" | "<=" | ">=" | "<" | ">") $s ws expr:e2 ")" ws "?" ws { NmTest($s, :e1, :e2) };
+    seq    = "(" ws state:l ws ";" ws state:r ws ")" ws { NmSeq(:l, :r) };
+    choice = "(" ws state:l ws "U" ws state:r ws")" ws { NmChoice(:l, :r) };
+    loop   = "*" ws state:e { NmLoop(:e) };
+    print  = "print" ws "(" ws expr:e ")" ws { NmPrint(:e) };
+    assign = ws id:v ws ":=" ws expr:e { NmAssign(:v, :e) };
+    while  = ws "while" ws "(" ws expr:e1 ws ("==" | "<=" | ">=" | "<" | ">") $s ws expr:e2 ws ")" ws "{" ws state:st ws "}" ws { buildWhile($s, :e1, :e2, :st) };
+
+    expr   = const | bin_op | un_op | apply | update | var;
+	const  = number:n { NmInt(:n) };
+	bin_op = "(" ws expr:l ws ("+"|"*"|"/"|"-"|"%") $s ws expr:r ")" ws { NmBinOp($s, :l, :r) };
+	un_op  = "-" $s ws expr:e { NmUnOp($s, :e) };
+	apply  = "app" ws "(" ws expr:a ws "," ws expr:i ws ")" ws { NmApp(:a, :i) };
+	update = "upd" ws "(" ws expr:a ws "," ws expr:i ws "," ws expr:v ")" ws { NmApp(:a, :i, :v) };
+	var    = id:v { NmVar(:v) };
+
+    number = digit+ $s { s2i($s) };
+	id = letter+ $s ws { $s };
+	letter = 'a'-'z';
+	digit  = '0'-'9';
+	ws = (' ' | '\t' | '\n' | '\r')*;
